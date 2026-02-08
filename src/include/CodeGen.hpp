@@ -42,6 +42,7 @@ class CodeGen {
     void genVarDecl(const VarDeclNode *node);
     void genIf(const IfNode *node);
     void genWhile(const WhileNode *node);
+    void genFor(const ForNode *node);
     void genFunctionCall(const FunctionCallNode *node);
 
     void genPrintCall(const FunctionCallNode *node);

@@ -94,7 +94,7 @@ void CodeGen::generateBlock(const BlockNode *node) {
             continue;
         }
 
-		pop("rax");
+        pop("rax");
     }
 }
 
@@ -147,6 +147,8 @@ void CodeGen::generate(const ASTNode *node) {
         genIf(n);
     } else if (auto n = dynamic_cast<const WhileNode *>(node)) {
         genWhile(n);
+    } else if (auto n = dynamic_cast<const ForNode *>(node)) {
+        genFor(n);
     }
 }
 
@@ -275,6 +277,37 @@ void CodeGen::genWhile(const WhileNode *node) {
     generate(node->body.get());
     emit("jmp " + labelStart);
 
+    emitLabel(labelEnd);
+}
+
+void CodeGen::genFor(const ForNode *node) {
+    if (node->init) {
+        generate(node->init.get());
+    }
+
+    std::string labelStart = getUniqueLabel("for_start");
+    std::string labelEnd = getUniqueLabel("for_end");
+    std::string labelUpdate = getUniqueLabel("for_update");
+
+    emitLabel(labelStart);
+
+    if (node->condition) {
+        generate(node->condition.get());
+        pop("rax");
+        emit("cmp rax, 0");
+        emit("je " + labelEnd);
+    }
+
+    generate(node->body.get());
+
+    emitLabel(labelUpdate);
+    if (node->update) {
+        generate(node->update.get());
+
+        pop("rax");
+    }
+
+    emit("jmp " + labelStart);
     emitLabel(labelEnd);
 }
 

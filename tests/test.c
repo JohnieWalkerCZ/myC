@@ -41,7 +41,7 @@ int main() {
     x--;
     print(x);
     print("For loop test:");
-    for (int i = 0; i < 10; i += 1) {
+    for (int i = 0; i <= 10; i += 1) {
         print(i);
     }
     return 0;
