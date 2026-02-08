@@ -7,12 +7,13 @@
 
 // 1. Define the Keywords Map
 const std::unordered_map<std::string, TokenType> keywordMap = {
-    {"int", TokenType::INT},       {"return", TokenType::RETURN},
-    {"void", TokenType::VOID},     {"if", TokenType::IF},
-    {"string", TokenType::STRING}, {"bool", TokenType::BOOL},
-    {"true", TokenType::TRUE},     {"false", TokenType::FALSE},
-    {"else", TokenType::ELSE},     {"while", TokenType::WHILE},
-    {"for", TokenType::FOR}};
+    {"int", TokenType::INT},          {"return", TokenType::RETURN},
+    {"void", TokenType::VOID},        {"if", TokenType::IF},
+    {"string", TokenType::STRING},    {"bool", TokenType::BOOL},
+    {"true", TokenType::TRUE},        {"false", TokenType::FALSE},
+    {"else", TokenType::ELSE},        {"while", TokenType::WHILE},
+    {"for", TokenType::FOR},          {"break", TokenType::BREAK},
+    {"continue", TokenType::CONTINUE}};
 
 Lexer::Lexer(const std::string &source) : m_src(source), m_pos(0) {};
 

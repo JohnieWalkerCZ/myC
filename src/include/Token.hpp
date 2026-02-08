@@ -15,10 +15,12 @@ enum class TokenType {
     ELSE,
     WHILE,
     FOR,
+	BREAK,
+	CONTINUE,
 
     IDENTIFIER,
     INT_LIT,
-	STRING_LIT,
+    STRING_LIT,
 
     PLUS,
     MINUS,

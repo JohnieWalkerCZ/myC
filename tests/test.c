@@ -42,7 +42,13 @@ int main() {
     print(x);
     print("For loop test:");
     for (int i = 0; i <= 10; i += 1) {
+        if (i == 5) {
+            continue;
+        }
         print(i);
+        if (i == 8) {
+            break;
+        }
     }
     return 0;
 }

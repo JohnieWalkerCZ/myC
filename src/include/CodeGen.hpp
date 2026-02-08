@@ -25,6 +25,8 @@ class CodeGen {
     std::unordered_map<std::string, TokenType> m_var_types;
     int m_stackIndex;
     int m_labelCounter;
+    std::vector<std::pair<std::string, std::string>>
+        m_loopStack; // (break_label, continue_label)
 
     void push(const std::string &reg);
     void pop(const std::string &reg);
@@ -46,6 +48,13 @@ class CodeGen {
     void genFunctionCall(const FunctionCallNode *node);
 
     void genPrintCall(const FunctionCallNode *node);
+
+    void pushLoopContext(const std::string &breakLabel,
+                         const std::string &continueLabel);
+    void popLoopContext();
+
+    void genBreak(const BreakNode *);
+    void genContinue(const ContinueNode *);
 
     struct DataEntry {
         std::string label;

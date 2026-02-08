@@ -2,6 +2,7 @@
 #include "include/AST.hpp"
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 static const std::vector<std::string> ARG_REGS = {"rdi", "rsi", "rdx", "r8",
@@ -112,6 +113,10 @@ void CodeGen::generate(const ASTNode *node) {
 
         emit("lea rax, [rel " + label + "]");
         push("rax");
+    } else if (auto n = dynamic_cast<const BreakNode *>(node)) {
+        genBreak(n);
+    } else if (auto n = dynamic_cast<const ContinueNode *>(node)) {
+        genContinue(n);
     } else if (auto n = dynamic_cast<const VariableNode *>(node)) {
         if (m_vars.find(n->name) == m_vars.end()) {
             throw std::runtime_error("Undefined variable: " + n->name);
@@ -267,6 +272,8 @@ void CodeGen::genWhile(const WhileNode *node) {
     std::string labelStart = getUniqueLabel("loop_start");
     std::string labelEnd = getUniqueLabel("loop_end");
 
+    pushLoopContext(labelEnd, labelStart);
+
     emitLabel(labelStart);
 
     generate(node->condition.get());
@@ -278,6 +285,8 @@ void CodeGen::genWhile(const WhileNode *node) {
     emit("jmp " + labelStart);
 
     emitLabel(labelEnd);
+
+    popLoopContext();
 }
 
 void CodeGen::genFor(const ForNode *node) {
@@ -288,6 +297,8 @@ void CodeGen::genFor(const ForNode *node) {
     std::string labelStart = getUniqueLabel("for_start");
     std::string labelEnd = getUniqueLabel("for_end");
     std::string labelUpdate = getUniqueLabel("for_update");
+
+    pushLoopContext(labelEnd, labelUpdate);
 
     emitLabel(labelStart);
 
@@ -309,6 +320,8 @@ void CodeGen::genFor(const ForNode *node) {
 
     emit("jmp " + labelStart);
     emitLabel(labelEnd);
+
+    popLoopContext();
 }
 
 void CodeGen::genFunctionCall(const FunctionCallNode *node) {
@@ -404,4 +417,33 @@ std::string CodeGen::makeStringLiteral(const std::string &value) {
     std::string label = "MSG_" + std::to_string(m_rodata.size());
     m_rodata.push_back({label, value});
     return label;
+}
+
+void CodeGen::pushLoopContext(const std::string &breakLabel,
+                              const std::string &continueLabel) {
+    m_loopStack.push_back({breakLabel, continueLabel});
+}
+
+void CodeGen::popLoopContext() {
+    if (!m_loopStack.empty()) {
+        m_loopStack.pop_back();
+    }
+}
+
+void CodeGen::genBreak(const BreakNode *) {
+    if (m_loopStack.empty()) {
+        throw std::runtime_error("CodeGen: 'break' statement outside loop");
+    }
+
+    std::string breakLabel = m_loopStack.back().first;
+    emit("jmp " + breakLabel);
+}
+
+void CodeGen::genContinue(const ContinueNode *) {
+    if (m_loopStack.empty()) {
+        throw std::runtime_error("CodeGen: 'continue' statement outside loop");
+    }
+
+    std::string continueLabel = m_loopStack.back().second;
+    emit("jmp " + continueLabel);
 }

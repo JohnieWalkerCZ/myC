@@ -23,6 +23,14 @@ struct BoolNode : public ASTNode {
     BoolNode(int v) : value(v) {}
 };
 
+struct BreakNode : public ASTNode {
+    BreakNode() {}
+};
+
+struct ContinueNode : public ASTNode {
+    ContinueNode() {}
+};
+
 // Represents a variable usage: "x"
 struct VariableNode : public ASTNode {
     std::string name;

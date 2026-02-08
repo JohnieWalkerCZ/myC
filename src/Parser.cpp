@@ -180,9 +180,9 @@ std::unique_ptr<WhileNode> Parser::parseWhileStatement() {
 }
 
 std::unique_ptr<ForNode> Parser::parseForStatement() {
-    advance(); 
+    advance();
     consume(TokenType::LPAREN, "Expected '(' after for");
-    
+
     Node init = nullptr;
     if (peek().type != TokenType::SEMI) {
         if (peek().type == TokenType::INT || peek().type == TokenType::BOOL ||
@@ -190,26 +190,27 @@ std::unique_ptr<ForNode> Parser::parseForStatement() {
             init = parseVarDeclaration();
         } else {
             init = parseExpression();
-            consume(TokenType::SEMI, "Expected ';' after initialization expression");
+            consume(TokenType::SEMI,
+                    "Expected ';' after initialization expression");
         }
     } else {
         advance();
     }
-    
+
     Node condition = nullptr;
     if (peek().type != TokenType::SEMI) {
         condition = parseExpression();
     }
     consume(TokenType::SEMI, "Expected ';' after condition");
-    
+
     Node update = nullptr;
     if (peek().type != TokenType::RPAREN) {
         update = parseExpression();
     }
     consume(TokenType::RPAREN, "Expected ')' after update");
-    
+
     auto body = parseStatement();
-    
+
     return std::make_unique<ForNode>(std::move(init), std::move(condition),
                                      std::move(update), std::move(body));
 }
@@ -356,6 +357,14 @@ Node Parser::parsePrimary() {
         auto expr = parseExpression();
         consume(TokenType::RPAREN, "Expected ')' after expression");
         return expr;
+    }
+
+    if (match(TokenType::BREAK)) {
+        return std::make_unique<BreakNode>();
+    }
+
+    if (match(TokenType::CONTINUE)) {
+        return std::make_unique<ContinueNode>();
     }
 
     throw std::runtime_error(

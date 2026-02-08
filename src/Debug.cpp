@@ -30,6 +30,10 @@ std::string tokenTypeToString(TokenType type) {
         return "WHILE";
     case TokenType::FOR:
         return "FOR";
+    case TokenType::BREAK:
+        return "BREAK";
+    case TokenType::CONTINUE:
+        return "CONTINUE";
 
     case TokenType::IDENTIFIER:
         return "ID";
@@ -122,7 +126,10 @@ void printAST(const ASTNode *node, int indent) {
         std::cout << "[Number] " << n->value << "\n";
     } else if (auto n = dynamic_cast<const StringNode *>(node)) {
         std::cout << "[String] " << n->value << "\n";
-
+    } else if (auto n = dynamic_cast<const BreakNode *>(node)) {
+        std::cout << "[Break]\n";
+    } else if (auto n = dynamic_cast<const ContinueNode *>(node)) {
+        std::cout << "[Continue]\n";
     } else if (auto n = dynamic_cast<const BoolNode *>(node)) {
         std::cout << "[Bool] " << ((n->value == 1) ? "true" : "false") << "\n";
     } else if (auto n = dynamic_cast<const VariableNode *>(node)) {
