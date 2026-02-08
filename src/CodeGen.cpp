@@ -249,20 +249,25 @@ void CodeGen::genUnaryOp(const UnaryOpNode *node) {
     }
 }
 void CodeGen::genIf(const IfNode *node) {
-    std::string labelElse = getUniqueLabel("else");
-    std::string labelEnd = getUniqueLabel("end");
+    std::string labelEnd = getUniqueLabel("if_end");
 
     generate(node->condition.get());
     pop("rax");
     emit("cmp rax, 0");
-    emit("je " + labelElse);
 
-    generate(node->thenBranch.get());
-    emit("jmp " + labelEnd);
-
-    emitLabel(labelElse);
     if (node->elseBranch) {
+        std::string labelElse = getUniqueLabel("if_else");
+        emit("je " + labelElse);
+
+        generate(node->thenBranch.get());
+        emit("jmp " + labelEnd);
+
+        emitLabel(labelElse);
         generate(node->elseBranch.get());
+    } else {
+        emit("je " + labelEnd);
+
+        generate(node->thenBranch.get());
     }
 
     emitLabel(labelEnd);

@@ -161,7 +161,11 @@ std::unique_ptr<IfNode> Parser::parseIfStatement() {
     std::unique_ptr<ASTNode> elseBranch = nullptr;
 
     if (match(TokenType::ELSE)) {
-        elseBranch = parseStatement();
+        if (peek().type == TokenType::IF) {
+            elseBranch = parseIfStatement();
+        } else {
+            elseBranch = parseStatement();
+        }
     }
 
     return std::make_unique<IfNode>(std::move(condition), std::move(thenBranch),

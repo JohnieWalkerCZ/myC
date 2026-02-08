@@ -44,8 +44,12 @@ int main() {
     for (int i = 0; i <= 10; i += 1) {
         if (i == 5) {
             continue;
+        } else if (i == 6) {
+            print("i == 6");
+        } else {
+            print(i);
         }
-        print(i);
+
         if (i == 8) {
             break;
         }
