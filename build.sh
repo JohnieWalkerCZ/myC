@@ -6,6 +6,7 @@ fi
 cd build && \
 cmake .. && \
 make && \
+cp mycc ../compiler && \
 ./mycc ../$1 && \
 echo "Compiling assembly code..." && \
 nasm output.asm -o output.o -f elf64 && \
