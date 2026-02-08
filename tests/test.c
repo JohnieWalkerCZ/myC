@@ -2,6 +2,8 @@
 /* Multiline
  * comment
  */
+int add(int a, int b) { return a + b; }
+
 int main() {
     int x = -5;
     bool y = false;
@@ -54,5 +56,6 @@ int main() {
             break;
         }
     }
+    print(add(4, 6));
     return 0;
 }

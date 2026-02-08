@@ -15,8 +15,8 @@ enum class TokenType {
     ELSE,
     WHILE,
     FOR,
-	BREAK,
-	CONTINUE,
+    BREAK,
+    CONTINUE,
 
     IDENTIFIER,
     INT_LIT,
@@ -26,6 +26,7 @@ enum class TokenType {
     MINUS,
     STAR,
     SLASH,
+    MOD,
     ASSIGN,
     EQ,
     NEQ,

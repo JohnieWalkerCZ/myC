@@ -62,4 +62,5 @@ class CodeGen {
     };
     std::vector<DataEntry> m_rodata;
     std::string makeStringLiteral(const std::string &value);
+	void generateDivisionByZero();
 };

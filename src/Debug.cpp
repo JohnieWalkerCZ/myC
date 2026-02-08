@@ -52,6 +52,8 @@ std::string tokenTypeToString(TokenType type) {
         return "DIV";
     case TokenType::ASSIGN:
         return "ASSIGN";
+    case TokenType::MOD:
+        return "MOD";
 
     case TokenType::EQ:
         return "EQ";
@@ -82,6 +84,8 @@ std::string tokenTypeToString(TokenType type) {
         return "RBRACE";
     case TokenType::SEMI:
         return "SEMI";
+    case TokenType::COMMA:
+        return "COMMA";
 
     case TokenType::TOK_EOF:
         return "TOK_EOF";

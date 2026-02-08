@@ -57,7 +57,7 @@ std::unique_ptr<ProgramNode> Parser::parseProgram() {
 
 std::unique_ptr<FunctionDeclNode> Parser::parseFunctionDeclaration() {
     if (peek().type != TokenType::INT && peek().type != TokenType::VOID &&
-        peek().type != TokenType::STRING) {
+        peek().type != TokenType::STRING && peek().type != TokenType::BOOL) {
         throw std::runtime_error(
             "PARSER: Expected return type for function definition.");
     }
@@ -222,15 +222,15 @@ Node Parser::parseExpression() { return parseAssignment(); }
 
 // Root of waterfall -> dictates order of operation (bottom up)
 /*
- * UNARY
+ * UNARY (+, -, !)
  * =
  * ||
  * &&
  * == / !=
  * < / <= / > / >=
  * + / -
- * * / /
- * 123 / variables / paratheses / function calls
+ * * / / / %
+ * 123 / variables / parentheses / function calls
  */
 
 Node Parser::parseAssignment() {
@@ -314,7 +314,8 @@ Node Parser::parseAdditive() {
 
 Node Parser::parseMultiplicative() {
     auto left = parsePrimary();
-    while (peek().type == TokenType::STAR || peek().type == TokenType::SLASH) {
+    while (peek().type == TokenType::STAR || peek().type == TokenType::SLASH ||
+           peek().type == TokenType::MOD) {
         auto op = advance().value;
         auto right = parsePrimary();
         left = std::make_unique<BinaryOpNode>(op, std::move(left),

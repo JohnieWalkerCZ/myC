@@ -2,7 +2,6 @@
 #include "include/AST.hpp"
 #include <stdexcept>
 #include <string>
-#include <utility>
 #include <vector>
 
 static const std::vector<std::string> ARG_REGS = {"rdi", "rsi", "rdx", "r8",
@@ -39,12 +38,16 @@ void CodeGen::generateProgram(const ProgramNode *program) {
         generateFunction(func.get());
     }
 
+    generateDivisionByZero();
+
     m_out << "\nsection .data\n";
     m_out << "fmt_int: db \"%d\", 10, 0\n";
     m_out << "fmt_str: db \"%s\", 10, 0\n";
 
     m_out << "bool_true: db \"true\", 0\n";
     m_out << "bool_false: db \"false\", 0\n";
+
+    m_out << "div_error_msg: db \"Error: division by zero\", 10, 0\n";
 
     for (const auto &entry : m_rodata) {
         m_out << entry.label << ": db \"" << entry.value << "\", 0\n";
@@ -201,8 +204,17 @@ void CodeGen::genBinaryOp(const BinaryOpNode *node) {
         emit("imul rax, rbx");
         push("rax");
     } else if (op == "/") {
+        emit("cmp rbx, 0");
+        emit("je division_by_zero");
         emit("cqo");
         emit("idiv rbx");
+        push("rax");
+    } else if (op == "%") {
+        emit("cmp rbx, 0");
+        emit("je division_by_zero");
+        emit("cqo");
+        emit("idiv rbx");
+        emit("mov rax, rdx");
         push("rax");
     }
     // Comparisons
@@ -451,4 +463,14 @@ void CodeGen::genContinue(const ContinueNode *) {
 
     std::string continueLabel = m_loopStack.back().second;
     emit("jmp " + continueLabel);
+}
+
+void CodeGen::generateDivisionByZero() {
+    m_out << "\n";
+    m_out << "division_by_zero:\n";
+    m_out << "\tmov rdi, div_error_msg\n";
+    m_out << "\tmov rax, 0\n";
+    m_out << "\tcall printf WRT ..plt\n";
+    m_out << "\tmov rax, 1\n";
+    m_out << "\tret\n";
 }

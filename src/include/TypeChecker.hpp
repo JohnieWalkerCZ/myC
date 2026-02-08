@@ -2,9 +2,15 @@
 #include "AST.hpp"
 #include <map>
 #include <string>
+#include <unordered_map>
+#include <vector>
 
 // Simple enum to track types during checking
 enum class ExprType { INT, BOOL, VOID, STRING, UNKNOWN };
+struct FunctionSignature {
+    ExprType returnType;
+    std::vector<ExprType> paramTypes;
+};
 
 class TypeChecker {
   public:
@@ -13,6 +19,7 @@ class TypeChecker {
   private:
     // We need a separate symbol table for types (Name -> Type)
     std::map<std::string, ExprType> m_symbolTable;
+	std::unordered_map<std::string, FunctionSignature> m_functionTable;
 
     // Tracks the current function's return type (for return checking)
     ExprType m_currentFuncReturnType = ExprType::UNKNOWN;
