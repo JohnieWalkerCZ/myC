@@ -21,7 +21,7 @@ int fibonacci(int n) {
 }
 
 // --- 3. Prime Check Helper ---
-void isPrime(int n) {
+bool isPrime(int n) {
     if (n <= 1)
         return false;
     for (int i = 2; i * i <= n; i = i + 1) {
