@@ -29,7 +29,11 @@ class Parser {
 
     Node parseStatement();
 
-    std::unique_ptr<VarDeclNode> parseVarDeclaration();
+    Node parseVarDeclaration();
+    std::unique_ptr<VarDeclNode> parseUnitVarDeclaration(std::string type,
+                                                         std::string name);
+    std::unique_ptr<ArrayDeclNode> parseArrayVarDeclaration(std::string type,
+                                                            std::string name);
 
     std::unique_ptr<ReturnNode> parseReturnStatement();
 

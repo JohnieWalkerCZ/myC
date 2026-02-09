@@ -126,11 +126,18 @@ Node Parser::parseStatement() {
     return expr;
 }
 
-std::unique_ptr<VarDeclNode> Parser::parseVarDeclaration() {
+Node Parser::parseVarDeclaration() {
     std::string type = advance().value;
     std::string name =
         consume(TokenType::IDENTIFIER, "Expected variable name").value;
+    if (peek().type == TokenType::LBRACKET) {
+        return parseArrayVarDeclaration(type, name);
+    }
+    return parseUnitVarDeclaration(type, name);
+}
 
+std::unique_ptr<VarDeclNode> Parser::parseUnitVarDeclaration(std::string type,
+                                                             std::string name) {
     Node initExpr = nullptr;
     if (match(TokenType::ASSIGN)) {
         initExpr = parseExpression();
@@ -138,6 +145,20 @@ std::unique_ptr<VarDeclNode> Parser::parseVarDeclaration() {
 
     consume(TokenType::SEMI, "Expected ';' after variable declaration");
     return std::make_unique<VarDeclNode>(type, name, std::move(initExpr));
+}
+
+std::unique_ptr<ArrayDeclNode>
+Parser::parseArrayVarDeclaration(std::string type, std::string name) {
+    consume(TokenType::LBRACKET, "Expected '['");
+
+    Token sizeToken =
+        consume(TokenType::INT_LIT, "Array size must be a constant integer");
+    int sizeVal = std::stoi(sizeToken.value);
+
+    consume(TokenType::RBRACKET, "Expected ']'");
+    consume(TokenType::SEMI, "Expected ';' after array declaration");
+
+    return std::make_unique<ArrayDeclNode>(type, name, sizeVal);
 }
 
 std::unique_ptr<ReturnNode> Parser::parseReturnStatement() {
@@ -222,8 +243,8 @@ Node Parser::parseExpression() { return parseAssignment(); }
 
 // Root of waterfall -> dictates order of operation (bottom up)
 /*
- * UNARY (+, -, !)
  * =
+ * UNARY (+, -, !)
  * ||
  * &&
  * == / !=
@@ -236,13 +257,15 @@ Node Parser::parseExpression() { return parseAssignment(); }
 Node Parser::parseAssignment() {
     auto left = parseUnary();
     if (match(TokenType::ASSIGN)) {
-        auto *varNode = dynamic_cast<VariableNode *>(left.get());
-        if (!varNode) {
-            std::runtime_error("PARSER: Invalid assignment target");
-        }
         auto right = parseAssignment();
-
-        return std::make_unique<VarAssignNode>(varNode->name, std::move(right));
+        if (auto *varNode = dynamic_cast<VariableNode *>(left.get())) {
+            return std::make_unique<VarAssignNode>(varNode->name,
+                                                   std::move(right));
+        }
+        if (auto *arrayNode = dynamic_cast<ArrayAccessNode *>(left.get())) {
+            return std::make_unique<ArrayAssignNode>(
+                arrayNode->name, std::move(arrayNode->index), std::move(right));
+        }
     }
     return left;
 }
@@ -353,6 +376,12 @@ Node Parser::parsePrimary() {
 
             consume(TokenType::RPAREN, "Expected ')' after arguments");
             return std::make_unique<FunctionCallNode>(name, std::move(args));
+        }
+
+        if (match(TokenType::LBRACKET)) {
+            Node index = parseExpression();
+            consume(TokenType::RBRACKET, "Expected ']' after array access");
+            return std::make_unique<ArrayAccessNode>(name, std::move(index));
         }
 
         return std::make_unique<VariableNode>(name);

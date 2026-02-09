@@ -18,15 +18,29 @@ bool isPrime(int n) {
     }
     for (int i = 2; i * i <= n; i++) {
         if (n % i == 0) {
-            return false; // false
+            return false;
         }
     }
-    return true; // true
+    return true;
 }
 
-// Main function to test complex features
+void showMessage(string message) {
+    print("---Message---");
+    print(message);
+}
+
 int main() {
     print("--- Complex Test Case ---");
+    int arr[5];
+    for (int i = 0; i < 5; i++) {
+        arr[i] = i;
+    }
+
+    for (int i = 0; i < 5; i++) {
+        print(arr[i]);
+    }
+
+    showMessage("Array okay");
 
     // Test factorial
     print("Factorial of 5:");
@@ -54,13 +68,6 @@ int main() {
             }
         }
     }
-
-    // String manipulation and concatenation (assuming '+' for concatenation)
-    string s1 = "Hello";
-    string s2 = ", ";
-    string s3 = "World!";
-    // string s4 = s1 + s2 + s3; // Assuming string concatenation
-    // print(s4);
 
     print("--- End of Complex Test ---");
 

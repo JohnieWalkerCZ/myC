@@ -38,10 +38,15 @@ class CodeGen {
     void generateBlock(const BlockNode *node);
     void generateFunction(const FunctionDeclNode *node);
     void genVarAssign(const VarAssignNode *node);
+    void genArrayAssign(const ArrayAssignNode *node);
+
+    void genVar(const VariableNode *node);
+	void genArrayAccess(const ArrayAccessNode *node);
 
     void genBinaryOp(const BinaryOpNode *node);
     void genUnaryOp(const UnaryOpNode *node);
     void genVarDecl(const VarDeclNode *node);
+    void genArrayDecl(const ArrayDeclNode *node);
     void genIf(const IfNode *node);
     void genWhile(const WhileNode *node);
     void genFor(const ForNode *node);
@@ -62,5 +67,5 @@ class CodeGen {
     };
     std::vector<DataEntry> m_rodata;
     std::string makeStringLiteral(const std::string &value);
-	void generateDivisionByZero();
+    void generateDivisionByZero();
 };

@@ -132,6 +132,12 @@ std::vector<Token> Lexer::tokenize() {
             case '}':
                 tokens.push_back({TokenType::RBRACE, "}"});
                 break;
+            case '[':
+                tokens.push_back({TokenType::LBRACKET, "["});
+                break;
+            case ']':
+                tokens.push_back({TokenType::RBRACKET, "]"});
+                break;
             case ',':
                 tokens.push_back({TokenType::COMMA, ","});
                 break;
@@ -224,15 +230,15 @@ std::vector<Token> Lexer::tokenize() {
                     tokens.push_back({TokenType::GT, ">"});
                 }
                 break;
-			case '%':
-				if (peek() == '=') {
-					consume();
-					Token var = tokens[tokens.size() - 1];
-					tokens.push_back({TokenType::ASSIGN,"="});
-					tokens.push_back(var);
-				}
-				tokens.push_back({TokenType::MOD, "%"});
-				break;
+            case '%':
+                if (peek() == '=') {
+                    consume();
+                    Token var = tokens[tokens.size() - 1];
+                    tokens.push_back({TokenType::ASSIGN, "="});
+                    tokens.push_back(var);
+                }
+                tokens.push_back({TokenType::MOD, "%"});
+                break;
 
             default:
                 std::cerr << "LEXER: Unknown character: '" << current << "'"

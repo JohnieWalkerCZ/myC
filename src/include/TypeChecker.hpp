@@ -19,7 +19,8 @@ class TypeChecker {
   private:
     // We need a separate symbol table for types (Name -> Type)
     std::map<std::string, ExprType> m_symbolTable;
-	std::unordered_map<std::string, FunctionSignature> m_functionTable;
+    std::map<std::string, int> m_arrayTable;
+    std::unordered_map<std::string, FunctionSignature> m_functionTable;
 
     // Tracks the current function's return type (for return checking)
     ExprType m_currentFuncReturnType = ExprType::UNKNOWN;

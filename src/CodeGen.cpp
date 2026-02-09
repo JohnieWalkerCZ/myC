@@ -1,5 +1,6 @@
 #include "include/CodeGen.hpp"
 #include "include/AST.hpp"
+#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -30,6 +31,7 @@ std::string CodeGen::getUniqueLabel(const std::string &prefix) {
 }
 
 void CodeGen::generateProgram(const ProgramNode *program) {
+    m_out << "default rel\n\n";
     m_out << "section .text\n";
     m_out << "global main\n";
     m_out << "extern printf\n\n";
@@ -56,12 +58,14 @@ void CodeGen::generateProgram(const ProgramNode *program) {
 
 void CodeGen::generateFunction(const FunctionDeclNode *node) {
     m_vars.clear();
-    m_stackIndex = -8; // [rbp - 8]
+    m_stackIndex = -8;
 
     emitLabel(node->name);
 
     push("rbp");
     emit("mov rbp, rsp");
+
+    emit("sub rsp, 128");
 
     for (size_t i = 0; i < node->parameters.size(); ++i) {
         std::string varName = node->parameters[i].name;
@@ -69,7 +73,7 @@ void CodeGen::generateFunction(const FunctionDeclNode *node) {
 
         m_vars[varName] = {m_stackIndex, node->parameters[i].type};
 
-        push(reg);
+        emit("mov [rbp" + std::to_string(m_stackIndex) + "], " + reg);
 
         m_stackIndex -= 8;
     }
@@ -87,12 +91,14 @@ void CodeGen::generateBlock(const BlockNode *node) {
     for (const auto &stmt : node->statements) {
         generate(stmt.get());
 
-        if (dynamic_cast<const VarDeclNode *>(stmt.get())) {
+        if (dynamic_cast<const VarDeclNode *>(stmt.get()) ||
+            dynamic_cast<const ArrayDeclNode *>(stmt.get())) {
             continue;
         }
 
         if (dynamic_cast<const IfNode *>(stmt.get()) ||
             dynamic_cast<const WhileNode *>(stmt.get()) ||
+            dynamic_cast<const ForNode *>(stmt.get()) ||
             dynamic_cast<const ReturnNode *>(stmt.get()) ||
             dynamic_cast<const BlockNode *>(stmt.get())) {
             continue;
@@ -121,12 +127,9 @@ void CodeGen::generate(const ASTNode *node) {
     } else if (auto n = dynamic_cast<const ContinueNode *>(node)) {
         genContinue(n);
     } else if (auto n = dynamic_cast<const VariableNode *>(node)) {
-        if (m_vars.find(n->name) == m_vars.end()) {
-            throw std::runtime_error("Undefined variable: " + n->name);
-        }
-        int offset = m_vars[n->name].offset;
-        emit("mov rax, [rbp" + std::to_string(offset) + "]");
-        push("rax");
+        genVar(n);
+    } else if (auto n = dynamic_cast<const ArrayAccessNode *>(node)) {
+        genArrayAccess(n);
     } else if (auto n = dynamic_cast<const BinaryOpNode *>(node)) {
         genBinaryOp(n);
     } else if (auto n = dynamic_cast<const UnaryOpNode *>(node)) {
@@ -142,8 +145,12 @@ void CodeGen::generate(const ASTNode *node) {
     // Statements
     else if (auto n = dynamic_cast<const VarDeclNode *>(node)) {
         genVarDecl(n);
+    } else if (auto n = dynamic_cast<const ArrayDeclNode *>(node)) {
+        genArrayDecl(n);
     } else if (auto n = dynamic_cast<const VarAssignNode *>(node)) {
         genVarAssign(n);
+    } else if (auto n = dynamic_cast<const ArrayAssignNode *>(node)) {
+        genArrayAssign(n);
     } else if (auto n = dynamic_cast<const ReturnNode *>(node)) {
         generate(
             n->returnValue.get()); // Calculate return value (result on stack)
@@ -162,10 +169,23 @@ void CodeGen::generate(const ASTNode *node) {
 
 void CodeGen::genVarDecl(const VarDeclNode *node) {
     generate(node->initExpr.get());
+
+    pop("rax");
+
     m_vars[node->name] = {m_stackIndex, node->type};
+    emit("mov [rbp" + std::to_string(m_stackIndex) + "], rax");
+
     m_stackIndex -= 8;
 }
 
+void CodeGen::genArrayDecl(const ArrayDeclNode *node) {
+    int count = node->size;
+    int bytesNeeded = count * 8;
+
+    m_vars[node->name] = {m_stackIndex, "array_" + node->type};
+
+    m_stackIndex -= bytesNeeded;
+}
 void CodeGen::genVarAssign(const VarAssignNode *node) {
     if (m_vars.find(node->name) == m_vars.end()) {
         throw std::runtime_error("CodeGen: Undeclared variable");
@@ -176,12 +196,65 @@ void CodeGen::genVarAssign(const VarAssignNode *node) {
     generate(node->newExpr.get());
 
     pop("rax");
-    if (offset < 0) {
+    emit("mov [rbp" + std::to_string(offset) + "], rax");
+    push("rax");
+}
 
-        emit("mov [rbp" + std::to_string(offset) + "], rax");
-    } else {
-        emit("mov [rbp-" + std::to_string(offset) + "], rax");
+void CodeGen::genArrayAssign(const ArrayAssignNode *node) {
+    if (m_vars.find(node->name) == m_vars.end()) {
+        throw std::runtime_error("Undefined array: " + node->name);
     }
+
+    int baseOffset = m_vars[node->name].offset;
+
+    generate(node->value.get());
+
+    generate(node->index.get());
+    pop("rbx");
+
+    emit("imul rbx, 8");
+
+    emit("mov rcx, " + std::to_string(baseOffset));
+
+    emit("sub rcx, rbx");
+
+    emit("add rcx, rbp");
+
+    pop("rax");
+
+    emit("mov [rcx], rax");
+
+    push("rax");
+}
+
+void CodeGen::genVar(const VariableNode *node) {
+    if (m_vars.find(node->name) == m_vars.end()) {
+        throw std::runtime_error("Undefined variable: " + node->name);
+    }
+    int offset = m_vars[node->name].offset;
+    emit("mov rax, [rbp" + std::to_string(offset) + "]");
+    push("rax");
+}
+
+void CodeGen::genArrayAccess(const ArrayAccessNode *node) {
+    if (m_vars.find(node->name) == m_vars.end()) {
+        throw std::runtime_error("Undefined array: " + node->name);
+    }
+
+    int baseOffset = m_vars[node->name].offset;
+
+    generate(node->index.get());
+    pop("rax");
+
+    emit("imul rax, 8");
+
+    emit("mov rcx, " + std::to_string(baseOffset));
+
+    emit("sub rcx, rax");
+
+    emit("add rcx, rbp");
+    emit("mov rax, [rcx]");
+
     push("rax");
 }
 
@@ -468,7 +541,7 @@ void CodeGen::genContinue(const ContinueNode *) {
 void CodeGen::generateDivisionByZero() {
     m_out << "\n";
     m_out << "division_by_zero:\n";
-    m_out << "\tmov rdi, div_error_msg\n";
+    m_out << "\tlea rdi, [rel div_error_msg]\n";
     m_out << "\tmov rax, 0\n";
     m_out << "\tcall printf WRT ..plt\n";
     m_out << "\tmov rax, 1\n";

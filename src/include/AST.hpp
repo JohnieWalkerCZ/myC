@@ -1,6 +1,9 @@
 #pragma once
+#include <cstdlib>
 #include <memory>
+#include <ratio>
 #include <string>
+#include <strings.h>
 #include <utility>
 #include <vector>
 
@@ -40,6 +43,14 @@ struct VariableNode : public ASTNode {
 struct StringNode : public ASTNode {
     std::string value;
     StringNode(const std::string &v) : value(v) {};
+};
+
+struct ArrayAccessNode : public ASTNode {
+    std::string name;
+    Node index;
+
+    ArrayAccessNode(std::string name, Node index)
+        : name(std::move(name)), index(std::move(index)) {}
 };
 
 // Represents operations: "left + right" or "left > right"
@@ -88,6 +99,25 @@ struct VarAssignNode : public ASTNode {
 
     VarAssignNode(std::string n, Node init)
         : name(n), newExpr(std::move(init)) {}
+};
+
+struct ArrayDeclNode : public ASTNode {
+    std::string type;
+    std::string name;
+    int size;
+
+    ArrayDeclNode(std::string type, std::string name, int size)
+        : type(type), name(name), size(size) {}
+};
+
+struct ArrayAssignNode : public ASTNode {
+    std::string name;
+    Node index;
+    Node value;
+
+    ArrayAssignNode(std::string name, Node index, Node value)
+        : name(std::move(name)), index(std::move(index)),
+          value(std::move(value)) {}
 };
 
 // Represents: "if (cond) { ... } else { ... }"

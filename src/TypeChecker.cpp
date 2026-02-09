@@ -21,7 +21,8 @@ void TypeChecker::checkProgram(const ProgramNode *program) {
 }
 
 void TypeChecker::checkFunction(const FunctionDeclNode *func) {
-    m_symbolTable.clear(); // New scope for each function
+    m_symbolTable.clear();
+    m_arrayTable.clear();
 
     for (const auto &param : func->parameters) {
         m_symbolTable[param.name] = tokenToType(param.type);
@@ -67,6 +68,43 @@ void TypeChecker::checkStatement(const ASTNode *stmt) {
                                      node->name + "'");
         }
 
+    } else if (auto node = dynamic_cast<const ArrayDeclNode *>(stmt)) {
+        ExprType declaredType = tokenToType(node->type);
+
+        if (node->size <= 0) {
+            throw std::runtime_error("Array size must be a positive integer.");
+        }
+
+        m_symbolTable[node->name] = declaredType;
+        m_arrayTable[node->name] = node->size;
+
+    } else if (auto node = dynamic_cast<const ArrayAssignNode *>(stmt)) {
+        if (m_symbolTable.find(node->name) == m_symbolTable.end()) {
+            throw std::runtime_error("Undefined array: " + node->name);
+        }
+
+        if (auto indexNode =
+                dynamic_cast<const NumberNode *>(node->index.get())) {
+            int index = indexNode->value;
+            int size = m_arrayTable[node->name];
+
+            if (index < 0 || index >= size) {
+                throw std::runtime_error(
+                    "Array Index Out of Bounds: Index " +
+                    std::to_string(index) + " is out of range for array '" +
+                    node->name + "' of size " + std::to_string(size));
+            }
+        }
+
+        ExprType varType = m_symbolTable[node->name];
+        ExprType exprType = inferType(node->value.get());
+
+        if (varType != exprType) {
+            throw std::runtime_error("Type mismatch: Cannot assign " +
+                                     typeToString(exprType) + " to array '" +
+                                     node->name + "'");
+        }
+
     } else if (auto node = dynamic_cast<const ReturnNode *>(stmt)) {
         ExprType returnType = node->returnValue
                                   ? inferType(node->returnValue.get())
@@ -76,7 +114,6 @@ void TypeChecker::checkStatement(const ASTNode *stmt) {
         }
     } else if (auto node = dynamic_cast<const IfNode *>(stmt)) {
         ExprType condType = inferType(node->condition.get());
-        std::cout << typeToString(condType) << std::endl;
         if (condType != ExprType::BOOL) {
             throw std::runtime_error("If statement condition must be BOOL");
         }
@@ -184,6 +221,27 @@ ExprType TypeChecker::inferType(const ASTNode *node) {
         }
 
         return sig.returnType;
+    }
+
+    if (auto arrAcc = dynamic_cast<const ArrayAccessNode *>(node)) {
+        if (m_symbolTable.find(arrAcc->name) == m_symbolTable.end()) {
+            throw std::runtime_error("Undefined array: " + arrAcc->name);
+        }
+
+        if (auto indexNode =
+                dynamic_cast<const NumberNode *>(arrAcc->index.get())) {
+            int index = indexNode->value;
+            int size = m_arrayTable[arrAcc->name];
+
+            if (index < 0 || index >= size) {
+                throw std::runtime_error(
+                    "Array Index Out of Bounds: Index " +
+                    std::to_string(index) + " is out of range for array '" +
+                    arrAcc->name + "' of size " + std::to_string(size));
+            }
+        }
+
+        return m_symbolTable[arrAcc->name];
     }
 
     return ExprType::UNKNOWN;

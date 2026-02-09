@@ -82,6 +82,10 @@ std::string tokenTypeToString(TokenType type) {
         return "LBRACE";
     case TokenType::RBRACE:
         return "RBRACE";
+    case TokenType::LBRACKET:
+        return "LBRACKET";
+    case TokenType::RBRACKET:
+        return "RBRACKET";
     case TokenType::SEMI:
         return "SEMI";
     case TokenType::COMMA:
@@ -141,6 +145,19 @@ void printAST(const ASTNode *node, int indent) {
     } else if (auto n = dynamic_cast<const VarAssignNode *>(node)) {
         std::cout << "[VarAssign] " << n->name << "\n";
         printAST(n->newExpr.get(), indent + 1);
+    } else if (auto n = dynamic_cast<const ArrayAccessNode *>(node)) {
+        std::cout << "[ArrayAccess] " << n->name << "\n";
+        printIndent(indent + 1);
+        std::cout << "Index:\n";
+        printAST(n->index.get(), indent + 2);
+    } else if (auto n = dynamic_cast<const ArrayAssignNode *>(node)) {
+        std::cout << "[ArrayAssign] " << n->name << "\n";
+        printIndent(indent + 1);
+        std::cout << "Index:\n";
+        printAST(n->index.get(), indent + 2);
+        printIndent(indent + 1);
+        std::cout << "Value:\n";
+        printAST(n->value.get(), indent + 2);
     } else if (auto n = dynamic_cast<const BinaryOpNode *>(node)) {
         std::cout << "[BinaryOp] " << n->op << "\n";
         printAST(n->left.get(), indent + 1);
@@ -161,6 +178,10 @@ void printAST(const ASTNode *node, int indent) {
         if (n->initExpr) {
             printAST(n->initExpr.get(), indent + 1);
         }
+    } else if (auto n = dynamic_cast<const ArrayDeclNode *>(node)) {
+        std::cout << "[Array] " << n->name << "\n";
+        printIndent(indent + 1);
+        std::cout << "Size: " << n->size << "\n";
     } else if (auto n = dynamic_cast<const ReturnNode *>(node)) {
         std::cout << "[Return]\n";
         printAST(n->returnValue.get(), indent + 1);
