@@ -3,6 +3,7 @@
 #include <cctype>
 #include <iostream>
 #include <ostream>
+#include <stdexcept>
 #include <unordered_map>
 
 // 1. Define the Keywords Map
@@ -15,7 +16,8 @@ const std::unordered_map<std::string, TokenType> keywordMap = {
     {"for", TokenType::FOR},          {"break", TokenType::BREAK},
     {"continue", TokenType::CONTINUE}};
 
-Lexer::Lexer(const std::string &source) : m_src(source), m_pos(0) {};
+Lexer::Lexer(const std::string &source)
+    : m_src(source), m_pos(0), m_col(0), m_row(1) {};
 
 char Lexer::peek(const int offset) const {
     if (m_pos + offset >= m_src.length())
@@ -26,6 +28,11 @@ char Lexer::peek(const int offset) const {
 char Lexer::consume() {
     if (m_pos >= m_src.length())
         return '\0';
+    m_col++;
+    if (peek() == '\n') {
+        m_row++;
+        m_col = 0;
+    }
     return m_src[m_pos++];
 }
 
@@ -81,7 +88,8 @@ std::vector<Token> Lexer::tokenize() {
                 buf += consume();
             }
             consume();
-            tokens.push_back({TokenType::STRING_LIT, buf});
+            tokens.push_back(
+                {TokenType::STRING_LIT, buf, m_col - (int)buf.length() + 1, m_row});
             continue;
         }
 
@@ -96,12 +104,15 @@ std::vector<Token> Lexer::tokenize() {
                 TokenType type = keywordMap.at(buf);
                 if (type == TokenType::TRUE || type == TokenType::FALSE) {
                     tokens.push_back(
-                        {type, std::to_string((int)(type == TokenType::TRUE))});
+                        {type, std::to_string((int)(type == TokenType::TRUE)),
+                         m_col - (int)buf.length() + 1, m_row});
                 } else {
-                    tokens.push_back({type, buf});
+                    tokens.push_back(
+                        {type, buf, m_col - (int)buf.length() + 1, m_row});
                 }
             } else {
-                tokens.push_back({TokenType::IDENTIFIER, buf});
+                tokens.push_back({TokenType::IDENTIFIER, buf,
+                                  m_col - (int)buf.length() + 1, m_row});
             }
         }
         // --- Handle Numbers ---
@@ -110,7 +121,8 @@ std::vector<Token> Lexer::tokenize() {
             while (isdigit(peek())) {
                 buf += consume();
             }
-            tokens.push_back({TokenType::INT_LIT, buf});
+            tokens.push_back(
+                {TokenType::INT_LIT, buf, m_col - (int)buf.length() + 1, m_row});
         }
         // --- Handle Symbols & Operators ---
         else {
@@ -118,131 +130,133 @@ std::vector<Token> Lexer::tokenize() {
             switch (current) {
             // Single-char tokens
             case ';':
-                tokens.push_back({TokenType::SEMI, ";"});
+                tokens.push_back({TokenType::SEMI, ";", m_col, m_row});
                 break;
             case '(':
-                tokens.push_back({TokenType::LPAREN, "("});
+                tokens.push_back({TokenType::LPAREN, "(", m_col, m_row});
                 break;
             case ')':
-                tokens.push_back({TokenType::RPAREN, ")"});
+                tokens.push_back({TokenType::RPAREN, ")", m_col, m_row});
                 break;
             case '{':
-                tokens.push_back({TokenType::LBRACE, "{"});
+                tokens.push_back({TokenType::LBRACE, "{", m_col, m_row});
                 break;
             case '}':
-                tokens.push_back({TokenType::RBRACE, "}"});
+                tokens.push_back({TokenType::RBRACE, "}", m_col, m_row});
                 break;
             case '[':
-                tokens.push_back({TokenType::LBRACKET, "["});
+                tokens.push_back({TokenType::LBRACKET, "[", m_col, m_row});
                 break;
             case ']':
-                tokens.push_back({TokenType::RBRACKET, "]"});
+                tokens.push_back({TokenType::RBRACKET, "]", m_col, m_row});
                 break;
             case ',':
-                tokens.push_back({TokenType::COMMA, ","});
+                tokens.push_back({TokenType::COMMA, ",", m_col, m_row});
                 break;
             case '+':
                 if (peek() == '=') {
                     consume();
                     Token var = tokens[tokens.size() - 1];
-                    tokens.push_back({TokenType::ASSIGN, "="});
+                    tokens.push_back({TokenType::ASSIGN, "=", m_col, m_row});
                     tokens.push_back(var);
                 } else if (peek() == '+') {
                     consume();
                     Token var = tokens[tokens.size() - 1];
-                    tokens.push_back({TokenType::ASSIGN, "="});
+                    tokens.push_back({TokenType::ASSIGN, "=", m_col, m_row});
                     tokens.push_back(var);
-                    tokens.push_back({TokenType::PLUS, "+"});
-                    tokens.push_back({TokenType::INT_LIT, "1"});
+                    tokens.push_back({TokenType::PLUS, "+", m_col, m_row});
+                    tokens.push_back({TokenType::INT_LIT, "1", m_col, m_row});
                     break;
                 }
-                tokens.push_back({TokenType::PLUS, "+"});
+                tokens.push_back({TokenType::PLUS, "+", m_col, m_row});
                 break;
             case '-':
                 if (peek() == '=') {
                     consume();
                     Token var = tokens[tokens.size() - 1];
-                    tokens.push_back({TokenType::ASSIGN, "="});
+                    tokens.push_back({TokenType::ASSIGN, "=", m_col, m_row});
                     tokens.push_back(var);
                 } else if (peek() == '-') {
                     consume();
                     Token var = tokens[tokens.size() - 1];
-                    tokens.push_back({TokenType::ASSIGN, "="});
+                    tokens.push_back({TokenType::ASSIGN, "=", m_col, m_row});
                     tokens.push_back(var);
-                    tokens.push_back({TokenType::MINUS, "-"});
-                    tokens.push_back({TokenType::INT_LIT, "1"});
+                    tokens.push_back({TokenType::MINUS, "-", m_col, m_row});
+                    tokens.push_back({TokenType::INT_LIT, "1", m_col, m_row});
                     break;
                 }
-                tokens.push_back({TokenType::MINUS, "-"});
+                tokens.push_back({TokenType::MINUS, "-", m_col, m_row});
                 break;
             case '*':
                 if (peek() == '=') {
                     consume();
                     Token var = tokens[tokens.size() - 1];
-                    tokens.push_back({TokenType::ASSIGN, "="});
+                    tokens.push_back({TokenType::ASSIGN, "=", m_col, m_row});
                     tokens.push_back(var);
                 }
-                tokens.push_back({TokenType::STAR, "*"});
+                tokens.push_back({TokenType::STAR, "*", m_col, m_row});
                 break;
             case '/':
                 if (peek() == '=') {
                     consume();
                     Token var = tokens[tokens.size() - 1];
-                    tokens.push_back({TokenType::ASSIGN, "="});
+                    tokens.push_back({TokenType::ASSIGN, "=", m_col, m_row});
                     tokens.push_back(var);
                 }
-                tokens.push_back({TokenType::SLASH, "/"});
+                tokens.push_back({TokenType::SLASH, "/", m_col, m_row});
                 break;
 
             // Multi-char tokens (==, !=, <=, >=)
             case '=':
                 if (peek() == '=') {
                     consume(); // Eat the second '='
-                    tokens.push_back({TokenType::EQ, "=="});
+                    tokens.push_back({TokenType::EQ, "==", m_col, m_row});
                 } else {
-                    tokens.push_back({TokenType::ASSIGN, "="});
+                    tokens.push_back({TokenType::ASSIGN, "=", m_col, m_row});
                 }
                 break;
 
             case '!':
                 if (peek() == '=') {
                     consume();
-                    tokens.push_back({TokenType::NEQ, "!="});
+                    tokens.push_back({TokenType::NEQ, "!=", m_col, m_row});
                 } else {
-                    tokens.push_back({TokenType::NOT, "!"});
+                    tokens.push_back({TokenType::NOT, "!", m_col, m_row});
                 }
                 break;
 
             case '<':
                 if (peek() == '=') {
                     consume();
-                    tokens.push_back({TokenType::LE, "<="});
+                    tokens.push_back({TokenType::LE, "<=", m_col, m_row});
                 } else {
-                    tokens.push_back({TokenType::LT, "<"});
+                    tokens.push_back({TokenType::LT, "<", m_col, m_row});
                 }
                 break;
 
             case '>':
                 if (peek() == '=') {
                     consume();
-                    tokens.push_back({TokenType::GE, ">="});
+                    tokens.push_back({TokenType::GE, ">=", m_col, m_row});
                 } else {
-                    tokens.push_back({TokenType::GT, ">"});
+                    tokens.push_back({TokenType::GT, ">", m_col, m_row});
                 }
                 break;
             case '%':
                 if (peek() == '=') {
                     consume();
                     Token var = tokens[tokens.size() - 1];
-                    tokens.push_back({TokenType::ASSIGN, "="});
+                    tokens.push_back({TokenType::ASSIGN, "=", m_col, m_row});
                     tokens.push_back(var);
                 }
-                tokens.push_back({TokenType::MOD, "%"});
+                tokens.push_back({TokenType::MOD, "%", m_col, m_row});
                 break;
 
             default:
-                std::cerr << "LEXER: Unknown character: '" << current << "'"
-                          << std::endl;
+                throw std::runtime_error(
+                    "Lexer: Unknown characker '" + std::string(1, current) +
+                    "' at position: " + std::to_string(m_row) + ":" +
+                    std::to_string(m_col));
                 break;
             }
         }

@@ -42,8 +42,9 @@ Token Parser::consume(TokenType type, const std::string &errMsg) {
         return advance();
     }
 
-    throw std::runtime_error("PARSER: " + errMsg + " at '" + peek().value +
-                             "'");
+    throw std::runtime_error("PARSER: " + errMsg + " got '" + peek().value +
+                             "', location: " + std::to_string(peek().row) +
+                             ":" + std::to_string(peek().col));
 }
 
 std::unique_ptr<ProgramNode> Parser::parseProgram() {

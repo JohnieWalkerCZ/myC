@@ -53,6 +53,8 @@ enum class TokenType {
 struct Token {
     TokenType type;
     std::string value;
+	int col;
+	int row;
 };
 
 inline bool isDataType(TokenType t) {

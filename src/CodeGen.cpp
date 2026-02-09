@@ -65,7 +65,7 @@ void CodeGen::generateFunction(const FunctionDeclNode *node) {
     push("rbp");
     emit("mov rbp, rsp");
 
-    emit("sub rsp, 128");
+    emit("sub rsp, 256");
 
     for (size_t i = 0; i < node->parameters.size(); ++i) {
         std::string varName = node->parameters[i].name;

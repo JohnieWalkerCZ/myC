@@ -10,6 +10,9 @@
 // Base class for all nodes
 struct ASTNode {
     virtual ~ASTNode() = default;
+
+	int row = 0;
+	int col = 0;
 };
 
 using Node = std::unique_ptr<ASTNode>;
